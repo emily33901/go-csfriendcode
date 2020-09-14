@@ -79,7 +79,7 @@ func rb32(input string) uint64 {
 		if i == 4 || i == 9 {
 			input = input[1:]
 		}
-		result |= (ralnum[input[0]]) << (5 * i)
+		result |= ralnum[input[0]] << (5 * i)
 
 		input = input[1:]
 	}
@@ -137,8 +137,8 @@ func friendCode(id uint64) string {
 	return b32(r)
 }
 
-// FriendCode gets a friend code based on a provided steamid64
-func FriendCode(id uint64) string {
+// Encode gets a friend code based on a provided steamid64
+func Encode(id uint64) string {
 	fc := friendCode(id)
 	if fc[:5] == "AAAA-" {
 		fc = fc[5:]
@@ -163,8 +163,8 @@ func steamID(fc string) uint64 {
 	return uint64(id) | defaultSteamID
 }
 
-// SteamID gets a steamid from a friendcode
-func SteamID(friendCode string) uint64 {
+// Decode gets a steamid from a friendcode
+func Decode(friendCode string) uint64 {
 	if len(friendCode) != 10 {
 		return 0
 	}

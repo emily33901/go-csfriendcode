@@ -5,15 +5,15 @@ import (
 )
 
 func TestFriendCode(t *testing.T) {
-	got := FriendCode(76561197960287930)
+	got := Encode(76561197960287930)
 	if got != "SUCVS-FADA" {
 		t.Errorf("GetFriendCode(76561197960287930) = %s; want 'SUCVS-FADA'", got)
 	}
-	got = FriendCode(76561197960265729)
+	got = Encode(76561197960265729)
 	if got != "AJJJS-ABAA" {
 		t.Errorf("GetFriendCode(76561197960265729) = %s; want 'AJJJS-ABAA'", got)
 	}
-	got = FriendCode(76561198259812645)
+	got = Encode(76561198259812645)
 	if got != "SN7N4-D5HG" {
 		t.Errorf("GetFriendCode(76561198259812645) = %s; want 'SN7N4-D5HG'", got)
 	}
@@ -27,17 +27,32 @@ func TestRb32(t *testing.T) {
 }
 
 func TestSteamID(t *testing.T) {
-	got := SteamID("SUCVS-FADA")
+	got := Decode("SUCVS-FADA")
 	if got != 76561197960287930 {
 		t.Errorf("SteamID(SUCVS-FADA) = %d; want 76561197960287930", got)
 	}
-	got = SteamID("AJJJS-ABAA")
+	got = Decode("AJJJS-ABAA")
 	if got != 76561197960265729 {
 		t.Errorf("SteamID(AJJJS-ABAA) = %d; want 76561197960265729", got)
 	}
-	got = SteamID("SN7N4-D5HG")
+	got = Decode("SN7N4-D5HG")
 	if got != 76561198259812645 {
 		t.Errorf("SteamID(SN7N4-D5HG) = %d; want 76561198259812645", got)
 	}
+}
 
+func TestFuzzy(t *testing.T) {
+	// Create a steamid64
+
+	for i := uint64(0); i <= 0xFFFFFFFF; i += 128 {
+		accountID := uint64(i)
+		steamID := defaultSteamID | accountID
+
+		friendCode := Encode(steamID)
+		rSteamID := Decode(friendCode)
+
+		if rSteamID != steamID {
+			t.Errorf("SteamID(%s) = %d; want %d", friendCode, rSteamID, steamID)
+		}
+	}
 }
