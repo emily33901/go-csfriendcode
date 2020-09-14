@@ -5,11 +5,48 @@ import (
 	"encoding/binary"
 	"errors"
 	"math/bits"
-	"strings"
 )
 
 const (
-	alnum = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	alnum          = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+	defaultSteamID = 0x110000100000000
+)
+
+var (
+	ralnum = map[byte]uint64{
+		'A': 0,
+		'B': 1,
+		'C': 2,
+		'D': 3,
+		'E': 4,
+		'F': 5,
+		'G': 6,
+		'H': 7,
+		'J': 8,
+		'K': 9,
+		'L': 10,
+		'M': 11,
+		'N': 12,
+		'P': 13,
+		'Q': 14,
+		'R': 15,
+		'S': 16,
+		'T': 17,
+		'U': 18,
+		'V': 19,
+		'W': 20,
+		'X': 21,
+		'Y': 22,
+		'Z': 23,
+		'2': 24,
+		'3': 25,
+		'4': 26,
+		'5': 27,
+		'6': 28,
+		'7': 29,
+		'8': 30,
+		'9': 31,
+	}
 )
 
 // b32 is some kind of base32 that is used
@@ -33,6 +70,21 @@ func b32(input uint64) string {
 	}
 
 	return string(result)
+}
+
+func rb32(input string) uint64 {
+	result := uint64(0)
+
+	for i := 0; i < 13; i++ {
+		if i == 4 || i == 9 {
+			input = input[1:]
+		}
+		result |= (ralnum[input[0]]) << (5 * i)
+
+		input = input[1:]
+	}
+
+	return bits.ReverseBytes64(result)
 }
 
 func hashSteamID(id uint64) (uint32, error) {
@@ -63,10 +115,10 @@ func makeU64(hi uint32, lo uint32) uint64 {
 	return uint64((uint64(hi) << 32) | uint64(lo))
 }
 
-func friendCode(id uint64) (string, error) {
+func friendCode(id uint64) string {
 	h, err := hashSteamID(id)
 	if err != nil {
-		return "", err
+		return ""
 	}
 
 	r := uint64(0)
@@ -82,17 +134,41 @@ func friendCode(id uint64) (string, error) {
 		r = makeU64(uint32(r>>31), a<<1|hashNibble)
 	}
 
-	return b32(r), nil
+	return b32(r)
 }
 
 // FriendCode gets a friend code based on a provided steamid64
 func FriendCode(id uint64) string {
-	fc, err := friendCode(id)
-	if err != nil {
-		return ""
-	}
-	if strings.Contains(fc, "AAAA-") {
+	fc := friendCode(id)
+	if fc[:5] == "AAAA-" {
 		fc = fc[5:]
 	}
 	return fc
+}
+
+func steamID(fc string) uint64 {
+	val := rb32(fc)
+	id := uint32(0)
+
+	for i := 0; i < 8; i++ {
+		// hashBit := val & 0x1
+		val >>= 1
+		idNibble := uint32(val & 0xF)
+		val >>= 4
+
+		id <<= 4
+		id |= idNibble
+	}
+
+	return uint64(id) | defaultSteamID
+}
+
+// SteamID gets a steamid from a friendcode
+func SteamID(friendCode string) uint64 {
+	if len(friendCode) != 10 {
+		return 0
+	}
+	friendCode = "AAAA-" + friendCode
+
+	return steamID(friendCode)
 }
